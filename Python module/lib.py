@@ -73,6 +73,8 @@ class Messenger:
         """
         读取一定数据
         private
+
+        不保证读取足量结果，需自行处理
         """
 
         recv_length = self.__default_recv_length if length==None else length
@@ -80,7 +82,7 @@ class Messenger:
         try: 
             data = self.socket.recv(recv_length)
         except BlockingIOError:
-            pass
+            return b""
         except ConnectionResetError: 
             raise PartnerCloseError("recv close, partner close(reset), should close")
         except ConnectionRefusedError: 
@@ -95,6 +97,7 @@ class Messenger:
         """
         发送二进制消息
         private
+        循环发送，保证完成
         """
 
         while len(message)>0: 
@@ -146,7 +149,10 @@ class Messenger:
         if "CL" not in header: 
             raise NeedCLError("header wrong, without content length")
 
-        data = data[header_length:]
+        if len(data)==header_length:
+            data = b""
+        else :
+            data = data[header_length:]
 
         return header, data
 
@@ -156,6 +162,8 @@ class Messenger:
         处理body
         private
         """
+        if len(data)<1 :
+            data = b""
         while len(data)<content_length:
             data += self.__read(content_length-len(data))
 
